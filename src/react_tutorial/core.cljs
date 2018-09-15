@@ -6,9 +6,7 @@
 ;; Views
 
 (defn square [{:keys [on-click value]}]
-  ; (js/console.log (pr-str value))
   [:button.square
-    ; {:on-click #(js/alert value)}
     {:on-click #(on-click)}
     value])
 
@@ -36,14 +34,14 @@
   (fn []
     (letfn
       [(handle-click [i]
-        (let [x-is-next? (get @state [:x-is-next?])]
-          (js/console.log (pr-str (calculate-winner (get @state :squares))))
-          (swap! state assoc-in [:squares i] (if x-is-next? "X" "O"))
-          (swap! state assoc [:x-is-next?] (not x-is-next?))))
+        (let [x-is-next? (get @state [:x-is-next?])
+              squares (get @state :squares)]
+          (when (and (= (calculate-winner squares) nil) (= (squares i) ""))
+            (swap! state assoc-in [:squares i] (if x-is-next? "X" "O"))
+            (swap! state assoc [:x-is-next?] (not x-is-next?)))))
        (render-square [i]
         [square {
-          :value (let [v (get-in @state [:squares i])]
-          v)
+          :value (get-in @state [:squares i])
           :on-click #(handle-click i)
         }])]
         (let [status (if (= (calculate-winner (get @state :squares)) nil)
