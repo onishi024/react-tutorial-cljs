@@ -5,11 +5,6 @@
 ;; -------------------------
 ;; Views
 
-(defn square [{:keys [on-click value]}]
-  [:button.square
-    {:on-click #(on-click)}
-    value])
-
 (defn calculate-winner [squares]
   (let [lines (vec [[0, 1, 2]
                     [3, 4, 5]
@@ -28,55 +23,68 @@
       nil
       lines)))
 
-(defn board []
-  (let [state (r/atom {:squares (vec (repeat 9 ""))
-                       :x-is-next? true})]
-  (fn []
-    (letfn
-      [(handle-click [i]
-        (let [x-is-next? (get @state [:x-is-next?])
-              squares (get @state :squares)]
-          (when (and (= (calculate-winner squares) nil) (= (squares i) ""))
-            (swap! state assoc-in [:squares i] (if x-is-next? "X" "O"))
-            (swap! state assoc [:x-is-next?] (not x-is-next?)))))
-       (render-square [i]
-        [square {
-          :value (get-in @state [:squares i])
-          :on-click #(handle-click i)
-        }])]
-        (let [status (if (= (calculate-winner (get @state :squares)) nil)
-                         (str "Next player: " (if (get @state [:x-is-next?]) "X" "O"))
-                         (str "Winner: " (calculate-winner (get @state :squares))))]
-          [:div
-            [:div.status status]
-            [:div.board-row
+(defn square [{:keys [on-click value]}]
+  [:button.square
+    {:on-click #(on-click)}
+    value])
+
+(defn board [& {:keys [squares on-click]}]
+  (letfn
+    [(render-square [i]
+       [square {
+         :value (squares i)
+         :on-click #(on-click i)
+       }])]
+        [:div
+          [:div.board-row
             (render-square 0)
             (render-square 1)
             (render-square 2)]
-            [:div.board-row
+          [:div.board-row
             (render-square 3)
             (render-square 4)
             (render-square 5)]
-            [:div.board-row
+          [:div.board-row
             (render-square 6)
             (render-square 7)
-            (render-square 8)]])))))
+            (render-square 8)]]))
 
 (defn game []
-  [:div.game
-    [:div.game-board
-      [board]]
-  [:div.game-info
-    [:div
-      ;"status"
-    ]
-  [:ol
-    ;"todo"
-    ]]])
+  (let [state (r/atom {:history (vec [{:squares (vec (repeat 9 ""))}])
+                       :x-is-next? true})]
+    (fn []
+      (letfn
+        [(handle-click [i]
+          (let [history (get @state :history)
+                current (last history)
+                squares (get current :squares)
+                x-is-next? (get @state [:x-is-next?])]
+            (when (and (= (calculate-winner squares) nil) (= (squares i) ""))
+                  (swap! state
+                         assoc :history
+                         (conj history
+                               (assoc-in current [:squares i] (if x-is-next? "X" "O"))))
+                  (swap! state assoc [:x-is-next?] (not x-is-next?)))))]
+            (let [history (get @state :history)
+                  current (last history)
+                  squares (get current :squares)
+                  winner (calculate-winner squares)
+                  status (if (= winner nil)
+                              (str "Next player: " (if (get @state [:x-is-next?]) "X" "O"))
+                              (str "Winner: " winner))]
+                    [:div.game
+                      [:div.game-board
+                        [board :squares squares
+                               :on-click handle-click]
+                        ]
+                    [:div.game-info
+                      [:div status]
+                    [:ol
+                    ;"todo"
+                    ]]])))))
 
 (defn home-page []
   [game])
-
 
 ;; -------------------------
 ;; Initialize app
