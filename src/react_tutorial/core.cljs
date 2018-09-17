@@ -60,6 +60,7 @@
                 current (last history)
                 squares (get current :squares)
                 x-is-next? (get @state :x-is-next?)]
+            (js/console.log (pr-str (get @state :x-is-next?)))
             (when (and (= (calculate-winner squares) nil) (= (squares i) ""))
                   (swap! state
                          assoc :history
@@ -81,7 +82,7 @@
                                          [:li {:key move} [:button {:on-click #(jump-to move)} desc]]))
                                      history)
                   status (if (= winner nil)
-                              (str "Next player: " (if (get @state [:x-is-next?]) "X" "O"))
+                              (str "Next player: " (if (get @state :x-is-next?) "X" "O"))
                               (str "Winner: " winner))]
                     [:div.game
                       [:div.game-board
