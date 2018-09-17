@@ -51,24 +51,35 @@
 
 (defn game []
   (let [state (r/atom {:history (vec [{:squares (vec (repeat 9 ""))}])
+                       :step-number 0
                        :x-is-next? true})]
     (fn []
       (letfn
         [(handle-click [i]
-          (let [history (get @state :history)
+          (let [history (vec (take (inc (get @state :step-number)) (get @state :history)))
                 current (last history)
                 squares (get current :squares)
-                x-is-next? (get @state [:x-is-next?])]
+                x-is-next? (get @state :x-is-next?)]
             (when (and (= (calculate-winner squares) nil) (= (squares i) ""))
                   (swap! state
                          assoc :history
                          (conj history
                                (assoc-in current [:squares i] (if x-is-next? "X" "O"))))
-                  (swap! state assoc [:x-is-next?] (not x-is-next?)))))]
+                  (swap! state assoc :step-number (count history))
+                  (swap! state assoc :x-is-next? (not x-is-next?)))))
+          (jump-to [step]
+            (swap! state assoc :step-number step)
+            (swap! state assoc :x-is-next? (if (= (mod step 2) 0) true false)))]
             (let [history (get @state :history)
-                  current (last history)
+                  current (get history (get @state :step-number))
                   squares (get current :squares)
                   winner (calculate-winner squares)
+                  moves (map-indexed (fn [move _]
+                                       (let [desc (if (= move 0)
+                                                      (str "Go to game start")
+                                                      (str "Go to move #" move))]
+                                         [:li {:key move} [:button {:on-click #(jump-to move)} desc]]))
+                                     history)
                   status (if (= winner nil)
                               (str "Next player: " (if (get @state [:x-is-next?]) "X" "O"))
                               (str "Winner: " winner))]
@@ -80,7 +91,7 @@
                     [:div.game-info
                       [:div status]
                     [:ol
-                    ;"todo"
+                      moves
                     ]]])))))
 
 (defn home-page []
